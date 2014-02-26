@@ -1,0 +1,28 @@
+{
+  "name": "decmdify",
+  "version": "0.1.0",
+  "description": "Transform CMD module to CommonJS",
+  "dependencies": {
+    "commander": "~1.1.1",
+    "through": "~2.3.4",
+    "esprima": "~1.0.4",
+    "estraverse": "~1.5.0",
+    "escodegen": "~1.2.0"
+  },
+  "devDependencies": {
+    "mocha": "~1.14.0",
+    "should": "~2.1.0",
+    "mocha-lcov-reporter": "~0.0.1",
+    "coveralls": "~2.5.0",
+    "blanket": "~1.1.4"
+  },
+  "config": {
+    "blanket": {
+      "pattern": "//^((?!(node_modules|test)).)*$/"
+    }
+  },
+  "scripts": {
+    "test": "make test"
+  },
+  "main": "index.js"
+}
