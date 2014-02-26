@@ -2,6 +2,9 @@
 
 >  Transform [CMD module](https://github.com/seajs/seajs/issues/242) to CommonJS, inspired of [deamdify](https://github.com/jaredhanson/deamdify)
 
+[![Build Status](https://travis-ci.org/popomore/decmdify.png?branch=master)](https://travis-ci.org/popomore/decmdify)
+[![Coverage Status](https://coveralls.io/repos/popomore/decmdify/badge.png?branch=master)](https://coveralls.io/r/popomore/decmdify?branch=master) 
+
 ---
 
 ## Install
