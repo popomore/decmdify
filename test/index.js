@@ -39,7 +39,7 @@ describe('decmdify', function() {
 
   it('transform', function(done) {
     decmdify.transform(__dirname + '/fixture/define-factory.js', function (err, result) {
-      result.should.be.eql(
+      newline(result).should.be.eql(
         fs.readFileSync(__dirname + '/fixture/define-factory.expect.js').toString()
       );
       done();
@@ -61,11 +61,15 @@ describe('decmdify', function() {
         data += buf;
       })
       .on('end', function() {
-        (data).should.be.eql(
+        newline(data).should.be.eql(
           fs.readFileSync(path.replace(/(\.js)$/, '.expect$1')).toString()
         );
         cb();
       });
+  }
+
+  function newline (str) {
+    return str.replace(/([^\n])$/, '$1\n');
   }
 
 });
