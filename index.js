@@ -1,5 +1,5 @@
 var fs = require('fs');
-var through = require('through');
+var through = require('through2');
 var esprima = require('esprima');
 var estraverse = require('estraverse');
 var escodegen = require('escodegen');
@@ -11,81 +11,30 @@ module.exports.transform = transform;
   Transform CMD module to CommonJS
 */
 
-function decmdify() {
-  var data = '',
-    stream = through(write, end);
-  return stream;
+function decmdify(options) {
+  options || (options = {});
+  var isGulp = !!options.gulp;
+  var data = '';
 
-  function write(buf) {
-    data += buf;
-  }
+  return through.obj(transform, flush);
 
-  function end() {
-    var isCMD = false,
-      ret;
-    var ast = esprima.parse(data);
-
-    estraverse.replace(ast, {
-      enter: function(node) {
-        if (isDefine(node)) {
-          var parents = this.parents();
-          if (parents.length === 2 &&
-            parents[0].type === 'Program' &&
-            parents[1].type === 'ExpressionStatement') {
-            isCMD = true;
-          }
-        }
-      },
-      leave: function(node) {
-        if (isDefine(node)) {
-          var args = node.arguments;
-
-          // define(factory)
-          // define(object)
-          if (args.length === 1 &&
-            (args[0].type === 'FunctionExpression' || args[0].type === 'ObjectExpression')) {
-            ret = createFactory(args[0]);
-            this.break ();
-          }
-
-          // define(id, factory)
-          // define(id, object)
-          // define(deps, factory)
-          // define(deps, object)
-          else if (args.length === 2 &&
-            (args[0].type === 'Literal' || args[0].type === 'ArrayExpression') &&
-            (args[1].type === 'FunctionExpression' || args[1].type === 'ObjectExpression')) {
-            ret = createFactory(args[1]);
-            this.break();
-          }
-
-          // define(id, deps, factory)
-          // define(id, deps, object)
-          else if (args.length === 3 &&
-            args[0].type === 'Literal' && args[1].type === 'ArrayExpression' &&
-            (args[2].type === 'FunctionExpression' || args[2].type === 'ObjectExpression')) {
-            ret = createFactory(args[2]);
-            this.break();
-          }
-        }
-      }
-    });
-
-    if (!isCMD) {
-      stream.queue(data);
-    } else {
-      var options = {
-        format: {
-          indent: {
-            style: '  ',
-          },
-          newline: '\n'
-        }
-      };
-      stream.queue(escodegen.generate(ret, options));
+  function transform (file, enc, callback) {
+    if (isGulp) {
+      var code = parse(file.contents);
+      file.contents = new Buffer(code);
+      this.push(file);
+      return callback();
     }
 
-    stream.queue(null);
+    data += file;
+    callback();
+  }
+
+  function flush(callback) {
+    if (!isGulp) {
+      this.push(parse(data));
+    }
+    callback();
   }
 }
 
@@ -100,6 +49,71 @@ function transform(src, cb) {
     .on('end', function () {
       cb(null, data);
     });
+}
+
+function parse(data) {
+  var isCMD = false, ret;
+  var ast = esprima.parse(data);
+
+  estraverse.replace(ast, {
+    enter: function(node) {
+      if (isDefine(node)) {
+        var parents = this.parents();
+        if (parents.length === 2 &&
+          parents[0].type === 'Program' &&
+          parents[1].type === 'ExpressionStatement') {
+          isCMD = true;
+        }
+      }
+    },
+    leave: function(node) {
+      if (isDefine(node)) {
+        var args = node.arguments;
+
+        // define(factory)
+        // define(object)
+        if (args.length === 1 &&
+          (args[0].type === 'FunctionExpression' || args[0].type === 'ObjectExpression')) {
+          ret = createFactory(args[0]);
+          this.break ();
+        }
+
+        // define(id, factory)
+        // define(id, object)
+        // define(deps, factory)
+        // define(deps, object)
+        else if (args.length === 2 &&
+          (args[0].type === 'Literal' || args[0].type === 'ArrayExpression') &&
+          (args[1].type === 'FunctionExpression' || args[1].type === 'ObjectExpression')) {
+          ret = createFactory(args[1]);
+          this.break();
+        }
+
+        // define(id, deps, factory)
+        // define(id, deps, object)
+        else if (args.length === 3 &&
+          args[0].type === 'Literal' && args[1].type === 'ArrayExpression' &&
+          (args[2].type === 'FunctionExpression' || args[2].type === 'ObjectExpression')) {
+          ret = createFactory(args[2]);
+          this.break();
+        }
+      }
+    }
+  });
+
+  if (!isCMD) {
+    return data;
+  }
+
+  var options = {
+    format: {
+      indent: {
+        style: '  ',
+      },
+      newline: '\n'
+    }
+  };
+  return escodegen.generate(ret, options);
 }
 
 function isDefine(node) {

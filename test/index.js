@@ -1,13 +1,14 @@
 var fs = require('fs');
 var decmdify = require('..');
 var should = require('should');
+var gutil = require('gulp-util');
 
 describe('decmdify', function() {
 
   it('should return a stream', function() {
     decmdify().should.be.an.instanceOf(require('stream'));
   });
-  
+
   it('define-factory', function(done) {
     compare('define-factory.js', done);
   });
@@ -51,6 +52,22 @@ describe('decmdify', function() {
       should.exist(err);
       done();
     });
+  });
+
+  it('support gulp', function(done) {
+    var fakeFile = new gutil.File({
+      path: 'a.js',
+      contents: new Buffer('define(function(){return "a";})')
+    });
+
+    var stream = decmdify({gulp: true})
+    .on('data', function(file) {
+      file.contents.toString()
+        .should.eql('module.exports = \'a\';');
+    })
+    .on('end', done);
+    stream.write(fakeFile);
+    stream.end();
   });
 
   function compare (file, cb) {
