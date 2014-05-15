@@ -3,7 +3,7 @@
 >  Transform [CMD module](https://github.com/seajs/seajs/issues/242) to CommonJS, inspired of [deamdify](https://github.com/jaredhanson/deamdify)
 
 [![Build Status](https://travis-ci.org/popomore/decmdify.png?branch=master)](https://travis-ci.org/popomore/decmdify)
-[![Coverage Status](https://coveralls.io/repos/popomore/decmdify/badge.png?branch=master)](https://coveralls.io/r/popomore/decmdify?branch=master) 
+[![Coverage Status](https://coveralls.io/repos/popomore/decmdify/badge.png?branch=master)](https://coveralls.io/r/popomore/decmdify?branch=master)
 
 ---
 
@@ -35,9 +35,32 @@ fs.createReadStream(source)
   .pipe(fs.createWriteStream(dest));
 ```
 
+use in gulp
+
+```
+gulp.src('*.js')
+  .pipe(decmdify({gulp: true}))
+  .pipe(gulp.dest(dest));
+```
+
 ## Thanks
 
 https://github.com/jaredhanson/deamdify
+
+## History
+
+### 0.3.0
+
+use falafel support comment
+
+### 0.2.0
+
+- use stream2 api
+- support gulp
+
+### 0.1.0
+
+first version
 
 ## License
 
