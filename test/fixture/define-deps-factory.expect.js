@@ -1,2 +1,6 @@
-var a = require('a');
-module.exports = { a: a };
+
+  var a = require('a');
+  // comment
+  module.exports = {
+    a: a
+  };

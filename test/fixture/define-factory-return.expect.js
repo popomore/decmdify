@@ -1,1 +1,5 @@
-module.exports = 'foo';
+
+  /*
+    comment
+  */
+  module.exports = 'foo';

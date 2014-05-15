@@ -63,7 +63,7 @@ describe('decmdify', function() {
     var stream = decmdify({gulp: true})
     .on('data', function(file) {
       file.contents.toString()
-        .should.eql('module.exports = \'a\';');
+        .should.eql('module.exports = "a";');
     })
     .on('end', done);
     stream.write(fakeFile);

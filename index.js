@@ -1,8 +1,8 @@
+'use strict';
+
 var fs = require('fs');
 var through = require('through2');
-var esprima = require('esprima');
-var estraverse = require('estraverse');
-var escodegen = require('escodegen');
+var falafel = require('falafel');
 
 module.exports = decmdify;
 module.exports.transform = transform;
@@ -16,11 +16,9 @@ function decmdify(options) {
   var isGulp = !!options.gulp;
   var data = '';
 
-  return through.obj(transform, flush);
-
-  function transform (file, enc, callback) {
+  return through.obj(function transform (file, enc, callback) {
     if (isGulp) {
-      var code = parse(file.contents);
+      var code = parse(file.contents.toString());
       file.contents = new Buffer(code);
       this.push(file);
       return callback();
@@ -28,14 +26,12 @@ function decmdify(options) {
 
     data += file;
     callback();
-  }
-
-  function flush(callback) {
+  }, function flush(callback) {
     if (!isGulp) {
       this.push(parse(data));
     }
     callback();
-  }
+  });
 }
 
 function transform(src, cb) {
@@ -52,68 +48,43 @@ function transform(src, cb) {
 }
 
 function parse(data) {
-  var isCMD = false, ret;
-  var ast = esprima.parse(data);
+  var isCMD = false;
+  var opt = {comment: true};
+  var output = falafel(data, opt, function (node) {
+    if (isDefine(node) && isRoot(node.parent)) {
+      isCMD = true;
+      var args = node.arguments;
 
-  estraverse.replace(ast, {
-    enter: function(node) {
-      if (isDefine(node)) {
-        var parents = this.parents();
-        if (parents.length === 2 &&
-          parents[0].type === 'Program' &&
-          parents[1].type === 'ExpressionStatement') {
-          isCMD = true;
-        }
+      // define(factory)
+      // define(object)
+      if (args.length === 1 &&
+        (args[0].type === 'FunctionExpression' || args[0].type === 'ObjectExpression')) {
+        return node.update(createFactory(args[0]));
       }
-    },
-    leave: function(node) {
-      if (isDefine(node)) {
-        var args = node.arguments;
 
-        // define(factory)
-        // define(object)
-        if (args.length === 1 &&
-          (args[0].type === 'FunctionExpression' || args[0].type === 'ObjectExpression')) {
-          ret = createFactory(args[0]);
-          this.break ();
-        }
-
-        // define(id, factory)
-        // define(id, object)
-        // define(deps, factory)
-        // define(deps, object)
-        else if (args.length === 2 &&
-          (args[0].type === 'Literal' || args[0].type === 'ArrayExpression') &&
-          (args[1].type === 'FunctionExpression' || args[1].type === 'ObjectExpression')) {
-          ret = createFactory(args[1]);
-          this.break();
-        }
-
-        // define(id, deps, factory)
-        // define(id, deps, object)
-        else if (args.length === 3 &&
-          args[0].type === 'Literal' && args[1].type === 'ArrayExpression' &&
-          (args[2].type === 'FunctionExpression' || args[2].type === 'ObjectExpression')) {
-          ret = createFactory(args[2]);
-          this.break();
-        }
+      // define(id, factory)
+      // define(id, object)
+      // define(deps, factory)
+      // define(deps, object)
+      else if (args.length === 2 &&
+        (args[0].type === 'Literal' || args[0].type === 'ArrayExpression') &&
+        (args[1].type === 'FunctionExpression' || args[1].type === 'ObjectExpression')) {
+        return node.update(createFactory(args[1]));
       }
+
+      // define(id, deps, factory)
+      // define(id, deps, object)
+      else if (args.length === 3 &&
+        args[0].type === 'Literal' && args[1].type === 'ArrayExpression' &&
+        (args[2].type === 'FunctionExpression' || args[2].type === 'ObjectExpression')) {
+        return node.update(createFactory(args[2]));
+      }
+    } else if (node.type === 'ReturnStatement') {
+      return node.update(createExports(node.argument));
     }
   });
 
-  if (!isCMD) {
-    return data;
-  }
-
-  var options = {
-    format: {
-      indent: {
-        style: '  ',
-      },
-      newline: '\n'
-    }
-  };
-  return escodegen.generate(ret, options);
+  return isCMD ? output.toString().replace(/(;\s*)*$/, ';') : data;
 }
 
 function isDefine(node) {
@@ -124,46 +95,31 @@ function isDefine(node) {
     callee.name === 'define';
 }
 
-function createFactory(factory) {
-  var ret = factory.type === 'FunctionExpression' ?
-    createProgram(factory.body.body) : createModuleExport(factory);
+function isRoot (node) {
+  if (!node) return false;
+  var parent = node.parent;
+  return node.type === 'ExpressionStatement' &&
+    parent && parent.type === 'Program';
+}
 
-  if (ret.type === 'Program') {
-    ret.body.forEach(function(item, index) {
-      if (item.type === 'ReturnStatement') {
-        ret.body[index] = createModuleExport(item.argument);
-      }
-    });
+function createFactory(node) {
+  if (node.type === 'FunctionExpression') {
+    return node.body.source()
+      .replace(/^\s*\{/, '')
+      .replace(/\}\s*;?\s*$/, '');
+  } else {
+    return createExports(node);
   }
-  return ret;
+
+  // if (ret.type === 'Program') {
+  //   ret.body.forEach(function(item, index) {
+  //     if (item.type === 'ReturnStatement') {
+  //       ret.body[index] = createModuleExport(item.argument);
+  //     }
+  //   });
+  // }
 }
 
-function createProgram(body) {
-  return {
-    type: 'Program',
-    body: body
-  };
-}
-
-function createModuleExport(obj) {
-  return {
-    type: 'ExpressionStatement',
-    expression: {
-      type: 'AssignmentExpression',
-      operator: '=',
-      left: {
-        type: 'MemberExpression',
-        computed: false,
-        object: {
-          type: 'Identifier',
-          name: 'module'
-        },
-        property: {
-          type: 'Identifier',
-          name: 'exports'
-        }
-      },
-      right: obj
-    }
-  };
+function createExports(node) {
+  return 'module.exports = ' + node.source() + ';';
 }

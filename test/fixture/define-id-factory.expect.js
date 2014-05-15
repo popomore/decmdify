@@ -1,5 +1,6 @@
-var a = require('a'), b = require('b');
-module.exports = {
-  a: a,
-  b: b
-};
+
+  var a = require('a'), b = require('b');
+  module.exports = {
+    a: a,
+    b: b
+  };
