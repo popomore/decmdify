@@ -7,3 +7,4 @@
     comment
   */
   module.exports = test;
+

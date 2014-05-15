@@ -53,7 +53,7 @@ function transform(src, cb) {
 function parse(data) {
   var isCMD = false;
   var opt = {comment: true};
-  var output = falafel(data, opt, function (node) {
+  var output = falafel(data.replace(/;\s*$/, ''), opt, function (node) {
     if (isDefine(node) && isRoot(node.parent)) {
       isCMD = true;
       var args = node.arguments;
@@ -87,7 +87,7 @@ function parse(data) {
     }
   });
 
-  return isCMD ? output.toString().replace(/(;\s*)*$/, ';') : data;
+  return isCMD ? output.toString() : data;
 }
 
 function isDefine(node) {
