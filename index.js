@@ -82,7 +82,7 @@ function parse(data) {
         (args[2].type === 'FunctionExpression' || args[2].type === 'ObjectExpression')) {
         return node.update(createFactory(args[2]));
       }
-    } else if (node.type === 'ReturnStatement') {
+    } else if (isReturn(node)) {
       return node.update(createExports(node.argument));
     }
   });
@@ -98,10 +98,21 @@ function isDefine(node) {
     callee.name === 'define';
 }
 
-function isRoot (node) {
+function isRoot(node) {
   var parent = node.parent;
   return node.type === 'ExpressionStatement' &&
     parent && parent.type === 'Program';
+}
+
+function isReturn(node) {
+  try {
+    var parent = node.parent.parent.parent;
+    return node.type === 'ReturnStatement' &&
+       parent.type === 'CallExpression' &&
+       parent.callee.name === 'define';
+  } catch(e) {
+    return false;
+  }
 }
 
 function createFactory(node) {

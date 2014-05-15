@@ -1,5 +1,9 @@
 
+
+  function test() {
+    return;
+  }
   /*
     comment
   */
-  module.exports = 'foo';
+  module.exports = test;

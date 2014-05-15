@@ -1,7 +1,11 @@
 define(function () {
+
+  function test() {
+    return;
+  }
   /*
     comment
   */
-  return 'foo';
+  return test;
 
 });

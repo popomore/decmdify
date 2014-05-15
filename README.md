@@ -51,7 +51,8 @@ https://github.com/jaredhanson/deamdify
 
 ### 0.3.1
 
-throw error when pass through obj and not specify gulp
+- throw error when pass through obj and not specify gulp
+- fix return statemen
 
 ### 0.3.0
 
