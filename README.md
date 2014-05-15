@@ -49,6 +49,10 @@ https://github.com/jaredhanson/deamdify
 
 ## History
 
+### 0.3.1
+
+throw error when pass through obj and not specify gulp
+
 ### 0.3.0
 
 use falafel support comment

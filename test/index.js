@@ -70,6 +70,16 @@ describe('decmdify', function() {
     stream.end();
   });
 
+  it('throw error when pass through obj and not specify gulp', function(done) {
+    var stream = decmdify()
+    .on('error', function(err) {
+      err.message.should.eql('not string, you can specify gulp to support object.');
+      done();
+    });
+    stream.write({});
+    stream.end();
+  });
+
   function compare (file, cb) {
     var data = '', path = __dirname + '/fixture/' + file;
     fs.createReadStream(path)

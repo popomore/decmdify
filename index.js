@@ -24,6 +24,9 @@ function decmdify(options) {
       return callback();
     }
 
+    if (typeof file !== 'string' && !(file instanceof Buffer)) {
+      return callback(new Error('not string, you can specify gulp to support object.'));
+    }
     data += file;
     callback();
   }, function flush(callback) {
@@ -96,7 +99,6 @@ function isDefine(node) {
 }
 
 function isRoot (node) {
-  if (!node) return false;
   var parent = node.parent;
   return node.type === 'ExpressionStatement' &&
     parent && parent.type === 'Program';
