@@ -1,12 +1,10 @@
 test:
-	@echo TRAVIS_JOB_ID $(TRAVIS_JOB_ID)
-	@node ./node_modules/.bin/mocha -R spec
+	./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha -- -R spec -t 20000
 
-coverage:
-	./node_modules/.bin/mocha -R html-cov --require blanket  > coverage.html 
-	@open coverage.html
+coveralls: test
+	cat ./coverage/lcov.info | ./node_modules/.bin/coveralls
 
-coveralls:
-	./node_modules/.bin/mocha -R mocha-lcov-reporter  --require blanket | ./node_modules/.bin/coveralls
+debug:
+	node $(NODE_DEBUG) ./node_modules/.bin/_mocha -R spec -t 20000
 
 .PHONY: test
