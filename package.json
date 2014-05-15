@@ -1,6 +1,6 @@
 {
   "name": "decmdify",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Transform CMD module to CommonJS",
   "author": "popomore <sakura9515@gmail.com>",
   "dependencies": {
